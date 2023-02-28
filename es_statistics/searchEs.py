@@ -23,18 +23,19 @@ class GetDataEs(ConenctionEs):
     def getAllDocument(self, indexName: str):
         # yeild를 통해 paging 된 데이터를 지속적으로 호출하여 next 함수 요청시 return 하도록
         # -> dataframe 적재 시 호출 스택 메모리 용량 고려
-        yield self.searchFirst(indexName)
+        self.result = self.searchFirst(indexName)
+        yield self.result["hits"]["hits"]
         while True:
             self.result = self.es.scroll(
-                body={"scroll": "1m", "scroll_id": self.result["_scroll_id"]}, format="json"
+                body={"scroll": "1m", "scroll_id": self.result["_scroll_id"]}
             )
-            yield self.result
+            yield self.result["hits"]["hits"]
             if len(self.result["hits"]["hits"]) == 0:
                 break
 
     def searchFirst(self, indexName):
         self.result = self.es.search(index=indexName, size=10000, scroll="1m")
-        return self.result
+        return self.result.body
 
     def checkScrollInfo(self):
         if self.result == None or "_scroll_id" not in self.result:
